@@ -4,7 +4,7 @@ private with sharing class AccountWebServiceTest {
   public static void testGET() {
     Id recordId = createTestAccount(); // return account.id and account.name = 'Test account'
     RestRequest request = new RestRequest();
-    request.requestUri = 'https://epam144-dev-ed.my.salesforce.com/services/apexrest/Account/';
+    request.requestUri = 'https://epam144-dev-ed.lightning.force.com/services/apexrest/Account/';
     request.httpMethod = 'GET';
     RestContext.request = request; // что здесь происходит?
     Account acc = [
@@ -20,11 +20,31 @@ private with sharing class AccountWebServiceTest {
 
   @isTest
   public static void testPOST() {
-    ID accountId = AccountWebService.createAccount('Test account');
-    System.assert(accountId != null);
-    Account acc = [SELECT Name, Id FROM Account WHERE Id = :accountId];
-    System.assert(acc != null);
-    System.assertEquals(acc.Name, 'Test account');
+     Id recordId = createTestAccount(); 
+    Account accountBeforePatch = [
+      SELECT Id, name
+      FROM Account
+      WHERE Id = :recordId
+    ];   
+      
+        RestRequest request = new RestRequest();
+        request.requestUri =
+            'https://epam144-dev-ed.my.salesforce.com/services/apexrest/Account/';
+        request.httpMethod = 'POST';
+        request.addHeader('Content-Type', 'application/json');
+        request.requestBody = Blob.valueOf('{"name":'+ '"' + accountBeforePatch.name+ '"}');
+        RestContext.request = request;
+        
+              
+       ID accountId = AccountWebService.createAccount();
+    
+    Account account = [
+      SELECT Id, name
+      FROM Account
+      WHERE Name = :accountBeforePatch.Name limit 1
+    ];
+    System.assert(accountId != null);      	
+    System.assertEquals(account.name, 'Test account');
   }
 
   @isTest
@@ -34,7 +54,7 @@ private with sharing class AccountWebServiceTest {
     request.requestUri =
       'https://epam144-dev-ed.my.salesforce.com/services/apexrest/Account/' +
       recordId;
-    request.httpMethod = 'GET';
+    request.httpMethod = 'DELETE';
     RestContext.request = request;
     AccountWebService.deleteAccount();
     List<Account> accounts = [SELECT Id FROM Account WHERE Id = :recordId];
@@ -43,34 +63,50 @@ private with sharing class AccountWebServiceTest {
 
   @isTest
   public static void testUPSERT() {
-    ID account1Id = AccountWebService.upsertAccount(null, 'test account');
-
-    System.assert(account1Id != null);
-    Account account1 = [SELECT Id, Name FROM Account WHERE Id = :account1Id];
-    System.assert(account1 != null);
-    System.assertEquals(account1.name, 'test account');
-
-    ID account2Id = AccountWebService.upsertAccount(
-      account1Id,
-      'second test account'
-    );
-    System.assertEquals(account1Id, account2Id);
-    Account account2 = [SELECT Id, name FROM Account WHERE Id = :account2Id];
-    System.assert(account2 != null);
-    System.assertEquals(account2.Name, 'second test account');
+     Id recordId = createTestAccount(); 
+    Account accountBeforePatch = [
+      SELECT Id, Name
+      FROM Account
+      WHERE Id = :recordId
+    ];      
+        RestRequest request = new RestRequest();
+        request.requestUri =
+            'https://epam144-dev-ed.my.salesforce.com/services/apexrest/Account/';
+        request.httpMethod = 'PUT';
+        request.addHeader('Content-Type', 'application/json');
+        request.requestBody = Blob.valueOf('{"name":'+ '"' + accountBeforePatch.name + '"}');
+        RestContext.request = request;
+                      
+       ID accountId = AccountWebService.upsertAccount();
+    System.assert(accountId != null);
+    Account account = [
+      SELECT Id, name
+      FROM Account
+      WHERE Id = :accountId
+    ];
+    System.assert(account != null);
+    System.assertEquals(account.Name, accountBeforePatch.name + ' PUT_Test');
   }
 
   @isTest
   static void testPATCH() {
-    Id recordId = createTestAccount(); // return account.id and account.name = 'Test account'
+    Id recordId = createTestAccount(); 
     Account accountBeforePatch = [
       SELECT Id, isPatched__c
       FROM Account
       WHERE Id = :recordId
     ];
     System.assertEquals(accountBeforePatch.isPatched__c, false);
-
-    ID accountId = AccountWebService.updateAccount(recordId);
+      
+        RestRequest request = new RestRequest();
+        request.requestUri =
+            'https://epam144-dev-ed.my.salesforce.com/services/apexrest/Account/';
+        request.httpMethod = 'PATCH';
+        request.addHeader('Content-Type', 'application/json');
+        request.requestBody = Blob.valueOf('{"id":'+ '"' + recordId+ '"}');
+        RestContext.request = request;        
+              
+       ID accountId = AccountWebService.updateAccount();
     System.assert(accountId != null);
     Account account = [
       SELECT Id, isPatched__c

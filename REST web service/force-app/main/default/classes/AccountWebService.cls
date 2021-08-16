@@ -6,18 +6,32 @@ global with sharing class AccountWebService {
     return result;
   }
 
+//  @HttpPost
+//  global static ID createAccount(String name) {
+//    Account acc = new Account(Name = name);
+//    insert acc;
+//    return acc.Id;
+//  }
+	
   @HttpPost
   global static ID createAccount() {
-    String accountName = request.requestURI.substring(
-	RestRequest request = RestContext.request;
-      request.requestURI.lastIndexOf('/') + 1
-    );
-    //Account acc = [SELECT Id FROM Account WHERE Id = :accountId];
-	
-    Account acc = new Account(Name = :accountName);
+    
+     RestRequest request = RestContext.request;    
+     Account acc = new Account();
+     //Deserialize the JSON string into name-value pairs
+     Map<String, Object> params = (Map<String, Object>) JSON.deserializeUntyped(
+       request.requestbody.tostring()
+     );
+    // Iterate through each parameter field and value
+     for (String fieldName : params.keySet()) {
+    // Set the field and value on the Account sObject
+       acc.put(fieldName, params.get(fieldName));
+     }      
+ 
     insert acc;
     return acc.Id;
   }
+  
 
   @HttpDelete
   global static void deleteAccount() {
@@ -29,33 +43,47 @@ global with sharing class AccountWebService {
     delete acc;
   }
 
+   
   @HttpPut
-  global static ID upsertAccount(Id id, String name) {
-    Account acc = new Account(id = id, Name = name);
-    upsert acc;
-    return acc.Id;
+  global static ID upsertAccount() {
+    RestRequest request = RestContext.request;    
+    
+     //Deserialize the JSON string into name-value pairs
+     Map<String, Object> params = (Map<String, Object>) JSON.deserializeUntyped(
+       request.requestbody.tostring()
+     );
+     Account acc = new Account();
+    // Iterate through each parameter field and value
+     for (String fieldName : params.keySet()) {
+    // Set the field and value on the Account sObject
+       acc.put(fieldName, params.get(fieldName));
+     }      
+      Account accToUpsert = [select name, id from Account where name =:acc.name];
+      accToUpsert.name = accToUpsert.name + ' PUT_Test';
+ 
+    upsert accToUpsert;
+    return accToUpsert.Id;
   }
 
   @HttpPatch
-  global static ID updateAccount(id id) {
-    // RestRequest request = RestContext.request;
-    // String accId = request.requestURI.substring(
-    //   request.requestURI.lastIndexOf('/') + 1
-    // );
-    // Account acc = [SELECT Id FROM Account WHERE Id = :accId];
-    // Deserialize the JSON string into name-value pairs
-    // Map<String, Object> params = (Map<String, Object>) JSON.deserializeUntyped(
-    //   request.requestbody.tostring()
-    // );
+  global static ID updateAccount() {
+     RestRequest request = RestContext.request;    
+    
+     //Deserialize the JSON string into name-value pairs
+     Map<String, Object> params = (Map<String, Object>) JSON.deserializeUntyped(
+       request.requestbody.tostring()
+     );
+     Account acc = new Account();
     // Iterate through each parameter field and value
-    // for (String fieldName : params.keySet()) {
-    // Set the field and value on the Case sObject
-    //   thisCase.put(fieldName, params.get(fieldName));
-    // }
+     for (String fieldName : params.keySet()) {
+    // Set the field and value on the Account sObject
+       acc.put(fieldName, params.get(fieldName));
+     }      
 
-    Account acc = [SELECT Id FROM Account WHERE Id = :id];
-    acc.isPatched__c = true;
-    update acc;
-    return acc.Id;
+    Account accToPatch = [SELECT Id FROM Account WHERE Id = :acc.id];
+    accToPatch.isPatched__c = true;
+      
+    update accToPatch;
+    return accToPatch.Id;
   }
 }
